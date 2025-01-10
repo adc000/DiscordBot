@@ -43,13 +43,24 @@ const client = new Client({
     ],
 });
 
-const channelId = "1322482658911060059"; // 메시지를 보낼 디스코드 채널 ID
 const manageChannelId = "1322482366454693969"; //봇을 관리할 디스코드 채널 ID
+
+const channelsDic = [
+    {
+        channelId : "1322482658911060059",
+        mention : "1322482440995868762",
+        link : "https://discord.com/channels/1300018885764059166/1321864208836595813"
+    },
+    {
+        channelId : "1322540738994770001",
+        mention : "1327345733896110100",
+        link : "https://discord.com/channels/1144901433813114951/1322541563892731914/1322541622734491701"
+    }
+];
+
 const roleReactionMap = {
     "🔥": "1322482440995868762", // 🔥 이모지 -> 역할 ID
 };
-
-const myChannelId = "1322540738994770001";
 
 const CHANNEL_NAME = "역할 부여"; // 생성할 채널 이름
 client.on("messageCreate", async (message) => {
@@ -159,26 +170,21 @@ client.once("ready", () => {
     let lastSentDate = "";
     // 1분마다 실행
     setInterval(async () => {
-        const channel = client.channels.cache.get(channelId);
-        const myChannel = client.channels.cache.get(myChannelId);
         const now = new Date();
         const today = now
             .toLocaleString(undefined, { timeZone: "Asia/Seoul" })
             .split(",")[0]; // YYYY-MM-DD 형식의 오늘 날짜
-        if (!channel || !channel.isTextBased()) {
-            console.log("올바른 텍스트 채널을 찾을 수 없습니다.");
-            return;
-        }
 
         const url1 = "https://toto-go.com"; // 접속을 확인할 사이트 URL
         const url2 = "https://todayzo.com"; // 접속을 확인할 사이트 URL
         const url3 = "https://lintoday.me"; // 접속을 확인할 사이트 URL
-        const url4 = "https://ariaworld.net"; // 접속을 확인할 사이트 URL
         const urls = [url1, url2, url3];
         const results = [];
         const channelName = [];
 
+        ////////////////////////////////////////////////////////////////////////
         // URL 체크
+        ////////////////////////////////////////////////////////////////////////
         channelName.push(`홍보`);
         for (const url of urls) {
             try {
@@ -203,98 +209,61 @@ client.once("ready", () => {
                 channelName.push(`❌`);
             }
         }
-        const threadUrl = `https://discord.com/channels/1300018885764059166/1321864208836595813`;
-
-        results.push(`홍보기 다운 링크 [클릭하세요](${threadUrl})`);
 
         try {
-            if (channel) {
-                await channel.setName(channelName.join(""));
-            }
-            if (myChannel) {
-                await myChannel.setName(channelName.join(""));
+            for (const channelinfo of channelsDic) {
+                const channel = client.channels.cache.get(channelinfo.channelId);
+                if (channel) {
+                    await channel.setName(channelName.join(""));
+                }
             }
         } catch (error) {
             console.error("메시지 처리 중 오류 발생:", error);
         }
 
         if (channelName.join("") == "홍보✅✅✅" && today != lastSentDate) {
-            if (channel) {
-                try {
-                    await channel.send(
-                        `[${today}] <@&${roleReactionMap["🔥"]}> 현재 ${now.toLocaleString(undefined, { timeZone: "Asia/Seoul" })} 모든 홍보 사이트가 정상 동작합니다.`,
-                    );
-                    console.log("역할 멘션 메시지가 전송되었습니다.");
-                } catch (error) {
-                    console.error("메시지 전송 중 오류 발생:", error);
+            for (const channelinfo of channelsDic) {
+                const channel = client.channels.cache.get(channelinfo.channelId);
+                if (channel) {
+                    try {
+                        await channel.send(
+                            `[${today}] <@&${channel.mention}> 현재 ${now.toLocaleString(undefined, { timeZone: "Asia/Seoul" })} 모든 홍보 사이트가 정상 동작합니다.`,
+                        );
+                        console.log("역할 멘션 메시지가 전송되었습니다.");
+                    } catch (error) {
+                        console.error("메시지 전송 중 오류 발생:", error);
+                    }
+                } else {
+                    console.log("올바른 채널을 찾을 수 없습니다.");
                 }
-            } else {
-                console.log("올바른 채널을 찾을 수 없습니다.");
             }
-
-            if (myChannel) {
-                try {
-                    await myChannel.send(
-                        `[${today}] <@276002007805067264> 현재 ${now.toLocaleString(undefined, { timeZone: "Asia/Seoul" })} 모든 홍보 사이트가 정상 동작합니다.`,
-                    );
-                    console.log("역할 멘션 메시지가 전송되었습니다.");
-                } catch (error) {
-                    console.error("메시지 전송 중 오류 발생:", error);
-                }
-            } else {
-                console.log("올바른 채널을 찾을 수 없습니다.");
-            }
-
             lastSentDate = today; // 메시지 발송 날짜 기록
         }
 
-        try {
-            // 채널의 모든 메시지 가져오기
-            const messages = await channel.messages.fetch({ limit: 10 }); // 최대 100개까지 가져옴
-            if (channel) {
-                const message = results.join("\n"); // 결과를 줄바꿈으로 연결
-                await channel.send(message);
-            } else {
-                console.log("올바른 채널을 찾을 수 없습니다.");
-            }
-            // 모든 메시지 삭제
-            let isFirst = true;
-            for (const message of messages.values()) {
-                if (message.content.startsWith(`[${today}]`) && isFirst)
-                {
-                    isFirst = false;
-                    continue;
+        for (const channelinfo of channelsDic) {
+            const channel = client.channels.cache.get(channelinfo.channelId);
+            try {
+                // 채널의 모든 메시지 가져오기
+                // 모든 메시지 삭제
+                const messages = await channel.messages.fetch({ limit: 10 }); // 최대 100개까지 가져옴
+                if (channel) {
+                    const message = results.join("\n") + `\n홍보기 다운 링크 [클릭하세요](${channelinfo.link})`;
+                    await channel.send(message);
+                } else {
+                    console.log("올바른 채널을 찾을 수 없습니다.");
                 }
-                await message.delete();
-            }
-        } catch (error) {
-            console.error("메시지 처리 중 오류 발생:", error);
-        }
-
-        try {
-            // 채널의 모든 메시지 가져오기
-            // 모든 메시지 삭제
-            const messages = await myChannel.messages.fetch({ limit: 10 }); // 최대 100개까지 가져옴
-            if (myChannel) {
-                results.push(
-                    `홍보기 다운 링크 [클릭하세요](https://discord.com/channels/1144901433813114951/1322541563892731914/1322541622734491701)`,
-                );
-                const message = results.join("\n"); // 결과를 줄바꿈으로 연결
-                await myChannel.send(message);
-            } else {
-                console.log("올바른 채널을 찾을 수 없습니다.");
-            }
-            let isFirst = true;
-            for (const message of messages.values()) {
-                if (message.content.startsWith(`[${today}]`) && isFirst)
-                {
-                    isFirst = false;
-                    continue;
+                let isFirst = true;
+                for (const message of messages.values()) {
+                    if (message.content.startsWith(`[${today}]`) && isFirst)
+                    {
+                        isFirst = false;
+                        continue;
+                    }
+                    await message.delete();
                 }
-                await message.delete();
+            } catch (error) {
+                console.error("메시지 처리 중 오류 발생:", error);
             }
-        } catch (error) {
-            console.error("메시지 처리 중 오류 발생:", error);
         }
 
         // 결과를 한 번에 채널에 전송
