@@ -43,6 +43,32 @@ const client = new Client({
     ],
 });
 
+const shutdown = async () => {
+    for (const channelinfo of channelsDic) {
+        const channel = await client.channels.fetch(channelinfo.channelId);
+        const messages = await channel.messages.fetch({ limit: 10 }); // 최대 100개까지 가져옴
+        for (const message of messages.values()) {
+            await message.delete();
+        }
+        if (channel) {
+            await channel.send('⚠️ 현재 봇이 종료된 상태입니다.');
+            await channel.setName("봇종료");
+        }
+    }
+    await client.destroy();
+    process.exit(0)
+};
+
+process.once('SIGINT', async () => {
+    console.log('⚠️ Ctrl + C 감지! 봇 종료 중...');
+    await shutdown();
+});
+
+process.once('SIGTERM', async () => {
+    console.log('⚠️ SIGTERM 감지! 봇 종료 중...');
+    await shutdown();
+});
+
 const manageChannelId = "1322482366454693969"; //봇을 관리할 디스코드 채널 ID
 
 const channelsDic = [
@@ -212,9 +238,12 @@ client.once("ready", () => {
 
         try {
             for (const channelinfo of channelsDic) {
-                const channel = client.channels.cache.get(channelinfo.channelId);
+                const channel = await client.channels.fetch(channelinfo.channelId);
                 if (channel) {
                     await channel.setName(channelName.join(""));
+                }
+                else {
+                    console.error("채녈명 변경 오류");
                 }
             }
         } catch (error) {
@@ -223,11 +252,11 @@ client.once("ready", () => {
 
         if (channelName.join("") == "홍보✅✅✅" && today != lastSentDate) {
             for (const channelinfo of channelsDic) {
-                const channel = client.channels.cache.get(channelinfo.channelId);
+                const channel = await client.channels.fetch(channelinfo.channelId);
                 if (channel) {
                     try {
                         await channel.send(
-                            `[${today}] <@&${channel.mention}> 현재 ${now.toLocaleString(undefined, { timeZone: "Asia/Seoul" })} 모든 홍보 사이트가 정상 동작합니다.`,
+                            `[${today}] <@&${channelinfo.mention}> 현재 ${now.toLocaleString(undefined, { timeZone: "Asia/Seoul" })} 모든 홍보 사이트가 정상 동작합니다.`,
                         );
                         console.log("역할 멘션 메시지가 전송되었습니다.");
                     } catch (error) {
@@ -241,7 +270,7 @@ client.once("ready", () => {
         }
 
         for (const channelinfo of channelsDic) {
-            const channel = client.channels.cache.get(channelinfo.channelId);
+            const channel = await client.channels.fetch(channelinfo.channelId);
             try {
                 // 채널의 모든 메시지 가져오기
                 // 모든 메시지 삭제
